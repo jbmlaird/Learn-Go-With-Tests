@@ -15,13 +15,16 @@ func TestPerimeter(t *testing.T) {
 }
 
 func TestArea(t *testing.T) {
-
 	areaTests := []struct {
 		shape Shape
 		want  float64
 	}{
+		// I could rewrite the below lines as:
+		// shape: Rectangle{Width: 10.0, Height: 10.0}, want: 100.0}, etc.
+		// but GoLand provides this automatically
 		{Rectangle{10.0, 10.0}, 100.0},
 		{Circle{10.0}, 314.1592653589793},
+		{Triangle{12, 6}, 36.0},
 	}
 
 	for _, tt := range areaTests {
