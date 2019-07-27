@@ -1,4 +1,4 @@
-package structsnting
+package structs
 
 import "testing"
 
