@@ -1,37 +1,76 @@
 package propertybasedtests
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+	"testing/quick"
+)
 
 func TestRomanNumerals(t *testing.T) {
 	cases := []struct {
-		Description string
-		Arabic      int
-		Want        string
+		Arabic uint16
+		Roman  string
 	}{
-		{"1 gets converted to I", 1, "I",},
-		{"2 gets converted to II", 2, "II"},
-		{"3 gets converted to III", 3, "III"},
-		{"4 gets converted to IV", 4, "IV"},
-		{"5 gets converted to V", 5, "V"},
-		{"6 gets converted to VI", 6, "VI"},
-		{"7 gets converted to VII", 7, "VII"},
-		{"8 gets converted to VIII", 8, "VIII"},
-		{"9 gets converted to IV", 9, "IX"},
-		{"10 gets converted to X", 10, "X"},
-		{"14 gets converted to XIV", 14, "XIV"},
-		{"18 gets converted to XVIII", 18, "XVIII"},
-		{"20 gets converted to XX", 20, "XX"},
-		{"39 gets converted to XXXIX", 39, "XXXIX"},
+		{1, "I",},
+		{2, "II"},
+		{3, "III"},
+		{4, "IV"},
+		{5, "V"},
+		{6, "VI"},
+		{7, "VII"},
+		{8, "VIII"},
+		{9, "IX"},
+		{10, "X"},
+		{14, "XIV"},
+		{18, "XVIII"},
+		{20, "XX"},
+		{39, "XXXIX"},
+		{40, "XL"},
+		{47, "XLVII"},
+		{49, "XLIX"},
+		{50, "L"},
+		{90, "XC"},
+		{100, "C"},
+		{140, "CXL"},
+		{150, "CL"},
+		{1984, "MCMLXXXIV"},
 	}
 
 	for _, test := range cases {
-		t.Run(test.Description, func(t *testing.T) {
+		t.Run(fmt.Sprintf("%d gets converted to %q", test.Arabic, test.Roman), func(t *testing.T) {
 			got := ConvertToRoman(test.Arabic)
-			want := test.Want
+			want := test.Roman
 
 			if got != want {
 				t.Errorf("got %q, wanted %q", got, want)
 			}
 		})
+	}
+
+	for _, test := range cases {
+		t.Run(fmt.Sprintf("%q gets converted to %d", test.Roman, test.Arabic), func(t *testing.T) {
+			got := ConvertToArabic(test.Roman)
+			want := test.Arabic
+
+			if got != want {
+				t.Errorf("got %d, want %d", got, test.Arabic)
+			}
+		})
+	}
+}
+
+func TestPropertiesOfConversion(t *testing.T) {
+	assertion := func(arabic uint16) bool {
+		if arabic > 3999 {
+			return true
+		}
+		t.Log("testing", arabic)
+		roman := ConvertToRoman(arabic)
+		fromRoman := ConvertToArabic(roman)
+		return fromRoman == arabic
+	}
+
+	if err := quick.Check(assertion, nil); err != nil {
+		t.Error("Failed checks", err)
 	}
 }
