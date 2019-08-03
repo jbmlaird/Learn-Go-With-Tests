@@ -2,11 +2,11 @@ package server
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -151,6 +151,43 @@ func TestLeague(t *testing.T) {
 	})
 }
 
+func TestFileSystemStore(t *testing.T) {
+	t.Run("/league from a reader", func(t *testing.T) {
+		database := strings.NewReader(`[
+			{"Name": "Cleo", "Wins": 10},
+			{"Name": "Chris", "Wins": 33}
+		]`)
+
+		store := FileSystemPlayerStore{database}
+
+		got := store.GetLeague()
+
+		want := []Player{
+			{"Cleo", 10},
+			{"Chris", 33},
+		}
+
+		assertLeague(t, got, want)
+
+		// Ensure seeking works correctly
+		got = store.GetLeague()
+		assertLeague(t, got, want)
+	})
+
+	t.Run("get player score", func(t *testing.T) {
+		database := strings.NewReader(`[
+			{"Name": "Cleo", "Wins": 10},
+			{"Name": "Chris", "Wins": 33}
+		]`)
+
+		store := FileSystemPlayerStore{database}
+
+		got := store.GetPlayerScore("Chris")
+		want := 33
+		assertScoreEquals(t, got, want)
+	})
+}
+
 func newGetScoreRequest(name string) *http.Request {
 	req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/players/%s", name), nil)
 	return req
@@ -182,17 +219,12 @@ func assertStatus(t *testing.T, got, want int) {
 
 func getLeagueFromResponse(t *testing.T, body *bytes.Buffer) (league []Player) {
 	t.Helper()
-
-	err := json.NewDecoder(body).Decode(&league)
-
-	if err != nil {
-		t.Fatalf("Unable to parse response from server %q into slice of Player, '%v'", body, err)
-	}
-
-	return
+	league, _ = NewLeague(body)
+	return league
 }
 
 func assertLeague(t *testing.T, got, want []Player) {
+	t.Helper()
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got: %v, wanted %v", got, want)
 	}
@@ -202,5 +234,11 @@ func assertContentType(t *testing.T, response *httptest.ResponseRecorder, want s
 	t.Helper()
 	if response.Result().Header.Get("content-type") != "application/json" {
 		t.Errorf("response did not have content-type of application/json, got %v", response.Result().Header)
+	}
+}
+
+func assertScoreEquals(t *testing.T, got, want int) {
+	if got != want {
+		t.Errorf("wanted %v but got %v", want, got)
 	}
 }
