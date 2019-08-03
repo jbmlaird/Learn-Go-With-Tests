@@ -7,6 +7,7 @@ import (
 
 type PlayerStore interface {
 	GetPlayerScore(name string) int
+	RecordWin(name string)
 }
 
 type PlayerServer struct {
@@ -14,22 +15,22 @@ type PlayerServer struct {
 }
 
 func (p *PlayerServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	player := r.URL.Path[len("/players/"):]
 	switch r.Method {
 	case http.MethodPost:
-		p.processWin(w)
+		p.processWin(w, player)
 	case http.MethodGet:
-		p.showScore(w, r)
+		p.showScore(w, r, player)
 	}
 }
 
-func (p *PlayerServer) processWin(w http.ResponseWriter) {
+func (p *PlayerServer) processWin(w http.ResponseWriter, name string) {
+	p.Store.RecordWin(name)
 	w.WriteHeader(http.StatusAccepted)
 }
 
-func (p *PlayerServer) showScore(w http.ResponseWriter, r *http.Request) {
-	player := r.URL.Path[len("/players/"):]
-
-	score := p.Store.GetPlayerScore(player)
+func (p *PlayerServer) showScore(w http.ResponseWriter, r *http.Request, name string) {
+	score := p.Store.GetPlayerScore(name)
 
 	if score == 0 {
 		w.WriteHeader(http.StatusNotFound)
